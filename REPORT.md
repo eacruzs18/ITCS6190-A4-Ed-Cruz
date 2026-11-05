@@ -1,19 +1,45 @@
 # Assignment #4: Report
 
-**Name:**
-**Student ID:**
-**Email:**
+**Name: Ed Cruz**
+**Student ID: 801337361**
+**Email: ecruz13@charlotte.edu**
 
 ---
 
 ## Seed and commands
 
-Seed used for `datagen.py`:
+Seed used for `datagen.py`: 801337361
 
 The commands you ran, in order:
-
+1. Generate the data
 ```bash
+python3 datagen.py 801337361
+```
 
+2. Start the cluster
+```bash
+docker compose up -d
+```
+
+3. Run the script
+```bash
+docker cp main.py spark-master:/opt/spark/work-dir/
+
+docker exec -it spark-master /opt/spark/bin/spark-submit \
+  --master spark://spark-master:7077 \
+  /opt/spark/work-dir/main.py part1a /opt/spark/work-dir/shared <your student ID>
+```
+4. Check the output
+```bash
+ls shared-folder/output/part1a                               # one Parquet part per emitting batch
+cat shared-folder/output/part1b/*.csv | grep -v ride_id | sort
+cat shared-folder/output/part2/metrics/*.csv
+cat shared-folder/output/part3/*.csv | grep -v ride_id | sort -t, -k9 -n -r | head
+find shared-folder/models/fare -maxdepth 2
+```
+5. Stop the cluster
+```bash
+docker compose down
 ```
 
 ---
@@ -23,13 +49,46 @@ The commands you ran, in order:
 The micro-batch summary (batches, watermark, state rows):
 
 ```
-
+batch input rows            watermark state rows
+    0         44                    -         27
+    1         44  2026-10-27 11:57:52         30
+    2         38  2026-10-27 11:58:48         31
+    3         36  2026-10-27 11:59:47         31
+    4         44  2026-10-27 12:00:51         25
+    5         35  2026-10-27 12:01:49         42
+    6         37  2026-10-27 12:02:52         46
+    7         40  2026-10-27 12:03:58         49
+    8         40  2026-10-27 12:04:49         50
+    9         36  2026-10-27 12:05:53         25
+   10         37  2026-10-27 12:06:50         38
+   11         45  2026-10-27 12:07:48         47
+   12         45  2026-10-27 12:08:52         49
+   13         42  2026-10-27 12:09:57         50
+   14         35  2026-10-27 12:10:46         25
+   15         42  2026-10-27 12:11:52         43
+   16         43  2026-10-27 12:12:48         49
+   17         38  2026-10-27 12:13:47         49
+   18         35  2026-10-27 12:14:55         50
+   19         41  2026-10-27 12:15:49         25
+   20         36  2026-10-27 12:16:53         38
+   21         36  2026-10-27 12:17:52         45
+   22         42  2026-10-27 12:18:54         48
+   23         42  2026-10-27 12:19:53         49
+   24         41  2026-10-27 12:20:54         24
+   25         38  2026-10-27 12:21:56         40
+   26         41  2026-10-27 12:22:58         46
+   27         41  2026-10-27 12:23:58         48
+   28         39  2026-10-27 12:24:49         49
+   29         42  2026-10-27 12:25:56         25
+   30          0  2026-10-27 12:26:42         25
 ```
 
 Which 5-minute windows did the stream write, and which are missing compared with the batch
 table printed after the query? For one window that was written, compare its trips with the
 batch value: where did the difference come from (look at how `datagen.py` makes the late
 events)? Why does `state rows` drop every five batches?
+
+The stream wrote the windows up to 08:20, but not 08:25 to 08:30, because the watermark had not passed the end of that window when the stream stopped. In the 08:00 window for zone 2, the stream has 12 trips and the batch has 14. The two missing rides arrived about 8 minutes late, and Spark drops rides that arrive after their window has closed. The state rows drop every five batches because each batch is one minute of data, so a 5-minute window closes every five batches. When a window closes, Spark frees its rows, which lowers the count from about 50 to about 25.
 
 
 
