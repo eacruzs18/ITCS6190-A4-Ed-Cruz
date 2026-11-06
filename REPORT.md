@@ -88,7 +88,7 @@ table printed after the query? For one window that was written, compare its trip
 batch value: where did the difference come from (look at how `datagen.py` makes the late
 events)? Why does `state rows` drop every five batches?
 
-The stream wrote the windows up to 08:20, but not 08:25 to 08:30, because the watermark had not passed the end of that window when the stream stopped. In the 08:00 window for zone 2, the stream has 12 trips and the batch has 14. The two missing rides arrived about 8 minutes late, and Spark drops rides that arrive after their window has closed. The state rows drop every five batches because each batch is one minute of data, so a 5-minute window closes every five batches. When a window closes, Spark frees its rows, which lowers the count from about 50 to about 25.
+The stream wrote the windows up to 08:20, but not 08:25 because the final watermark never passed 8:30. In the 08:00 window for zone 2, the stream has 12 trips and the batch has 14. The two missing rides arrived about 8 minutes late, and Spark drops rides that arrive after their window has closed. The state rows drop every five batches because each batch is one minute of data, so a 5-minute window closes every five batches. When a window closes, Spark frees its rows, which lowers the count from about 50 to about 25.
 
 
 
