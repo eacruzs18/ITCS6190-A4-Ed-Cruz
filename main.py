@@ -102,10 +102,14 @@ def part1b_alerts():
     alerts = (rides.where((col("fare") > 150) | (col("distance_km") == 0))
               .withColumn("reason", when(col("fare") > 150, "high_fare").otherwise("zero_distance"))
               .select("ride_id", "event_time", "pickup_zone", "distance_km", "duration_min", "fare", "reason"))
-    return (alerts.writeStream.outputMode("append").format("csv").option("header", True)
-            .option("timestampFormat", "yyyy-MM-dd HH:mm:ss")
-            .option("path", out_dir).option("checkpointLocation", ckpt_dir)
-            .trigger(availableNow=True).start())
+    q = (alerts.writeStream.outputMode("append").format("csv").option("header", True)
+         .option("timestampFormat", "yyyy-MM-dd HH:mm:ss")
+         .option("path", out_dir).option("checkpointLocation", ckpt_dir)
+         .trigger(availableNow=True).start())
+    q.awaitTermination()
+    print("\n=== part1b: alert rows ===")
+    spark.read.csv(out_dir, header=True).orderBy("ride_id").show(100, truncate=False)
+    return q
 
 
 # ---------------------------------------------------------------- Part 2: the fare model
